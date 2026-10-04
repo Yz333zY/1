@@ -58,12 +58,23 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opac
 .stat span{font-size:11.5px;color:var(--ink2);font-family:var(--mono)}
 
 /* 搜索框 */
-.search{margin-bottom:14px}
-.search input{width:100%;padding:13px 18px;border:1px solid var(--line);border-radius:99px;background:var(--glass);
+.search{display:flex;gap:10px;margin-bottom:14px}
+.search input{flex:1;padding:13px 18px;border:1px solid var(--line);border-radius:99px;background:var(--glass);
   backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);color:var(--ink);font-size:13.5px;font-family:var(--sans);
   box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.6);outline:none;transition:.2s}
 .search input::placeholder{color:var(--ink3)}
 .search input:focus{border-color:rgba(74,141,255,.6);box-shadow:0 0 0 3px rgba(74,141,255,.15),var(--shadow)}
+.search .shuffle{flex-shrink:0;border:1px solid var(--line);background:var(--glass);color:var(--ink);padding:13px 20px;
+  border-radius:99px;font-size:13px;cursor:pointer;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.6);transition:.15s;font-family:var(--sans)}
+.search .shuffle:hover{border-color:rgba(74,141,255,.6);box-shadow:0 0 0 3px rgba(74,141,255,.15),var(--shadow)}
+
+/* 分类栏 */
+.cats{display:flex;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.cat{border:1px solid var(--line);background:var(--glass);color:var(--ink2);padding:8px 16px;border-radius:99px;
+  font-size:12.5px;cursor:pointer;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);transition:.15s;font-family:var(--sans)}
+.cat:hover{color:var(--ink)}
+.cat.active{background:rgba(74,141,255,.2);border-color:rgba(74,141,255,.5);color:var(--ink);font-weight:600}
 
 /* 提示行 */
 .hint{display:flex;align-items:center;gap:8px;margin:0 6px 14px;font-size:12.5px;color:var(--ink2)}
@@ -129,6 +140,16 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opac
 
   <div class="search">
     <input type="text" id="search" placeholder="搜索接口… 例如：天气 / 翻译 / 狗">
+    <button class="shuffle" id="shuffle">🎲 随便看看</button>
+  </div>
+
+  <div class="cats" id="cats">
+    <button class="cat active" data-cat="">全部</button>
+    <button class="cat" data-cat="图片">图片</button>
+    <button class="cat" data-cat="文字">文字</button>
+    <button class="cat" data-cat="数据">数据</button>
+    <button class="cat" data-cat="太空">太空</button>
+    <button class="cat" data-cat="工具">工具</button>
   </div>
 
   <div class="grid" id="grid"></div>
@@ -140,38 +161,38 @@ body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opac
 
 <script>
 const APIS=[
-  {id:'translate',name:'中文翻译',desc:'英→中翻译 · MyMemory',src:'mymemory.translated.net'},
-  {id:'weather',name:'实时天气',desc:'北京当前天气 · Open-Meteo',src:'open-meteo.com'},
-  {id:'hitokoto',name:'一言',desc:'随机中文句子',src:'hitokoto.cn'},
-  {id:'cat',name:'猫咪冷知识',desc:'随机猫咪知识',src:'catfact.ninja'},
-  {id:'dog',name:'随机狗图',desc:'随机狗狗照片',src:'dog.ceo'},
-  {id:'fox',name:'随机狐狸',desc:'随机狐狸照片',src:'randomfox.ca'},
-  {id:'joke',name:'随机笑话',desc:'安全模式笑话',src:'jokeapi.dev'},
-  {id:'kanye',name:'侃爷语录',desc:'随机 Kanye West 语录',src:'kanye.rest'},
-  {id:'advice',name:'人生建议',desc:'随机人生建议',src:'adviceslip.com'},
-  {id:'gender',name:'名字性别',desc:'预测名字性别',src:'genderize.io'},
-  {id:'age',name:'名字年龄',desc:'预测名字年龄段',src:'agify.io'},
-  {id:'ip',name:'我的 IP',desc:'定位当前出口 IP',src:'ipwho.is'},
-  {id:'user',name:'随机用户',desc:'生成虚构人物资料',src:'randomuser.me'},
-  {id:'fx',name:'实时汇率',desc:'美元兑主要货币',src:'er-api.com'},
-  {id:'pokemon',name:'宝可梦',desc:'皮卡丘资料',src:'pokeapi.co'},
-  {id:'sw',name:'星战人物',desc:'星战角色卢克',src:'swapi.dev'},
-  {id:'country',name:'世界国家',desc:'国家首都与人口',src:'restcountries.com'},
-  {id:'chuck',name:'Chuck 语录',desc:'随机硬汉语录',src:'chucknorris.io'},
-  {id:'dadjoke',name:'老爸笑话',desc:'随机冷笑话',src:'icanhazdadjoke.com'},
-  {id:'cocktail',name:'随机鸡尾酒',desc:'随机鸡尾酒配方',src:'cocktaildb.com'},
-  {id:'meal',name:'随机美食',desc:'随机菜谱',src:'themealdb.com'},
-  {id:'sunrise',name:'日出日落',desc:'北京日出日落时间',src:'sunrise-sunset.org'},
-  {id:'zip',name:'邮编查询',desc:'美国邮编信息',src:'zippopotam.us'},
-  {id:'zen',name:'GitHub 禅语',desc:'开发哲学短句',src:'github.com'},
-  {id:'picsum',name:'随机图片',desc:'Lorem Picsum 随机图片',src:'picsum.photos'},
-  {id:'duck',name:'随机鸭子',desc:'随机鸭子照片',src:'random-d.uk'},
-  {id:'iss',name:'空间站位置',desc:'国际空间站实时经纬度',src:'open-notify.org'},
-  {id:'astro',name:'太空宇航员',desc:'当前在轨宇航员名单',src:'open-notify.org'},
-  {id:'qrcode',name:'二维码生成',desc:'生成任意内容的二维码',src:'qrserver.com'},
-  {id:'avatar',name:'头像生成',desc:'DiceBear 随机头像',src:'dicebear.com'},
-  {id:'quote',name:'随机名言',desc:'DummyJSON 英文名言',src:'dummyjson.com'},
-  {id:'chess',name:'棋手资料',desc:'国际象棋棋手 Hikaru 资料',src:'chess.com'}
+  {id:'translate',name:'中文翻译',desc:'英→中翻译 · MyMemory',src:'mymemory.translated.net',cat:'工具'},
+  {id:'weather',name:'实时天气',desc:'北京当前天气 · Open-Meteo',src:'open-meteo.com',cat:'数据'},
+  {id:'hitokoto',name:'一言',desc:'随机中文句子',src:'hitokoto.cn',cat:'文字'},
+  {id:'cat',name:'猫咪冷知识',desc:'随机猫咪知识',src:'catfact.ninja',cat:'文字'},
+  {id:'dog',name:'随机狗图',desc:'随机狗狗照片',src:'dog.ceo',cat:'图片'},
+  {id:'fox',name:'随机狐狸',desc:'随机狐狸照片',src:'randomfox.ca',cat:'图片'},
+  {id:'joke',name:'随机笑话',desc:'安全模式笑话',src:'jokeapi.dev',cat:'文字'},
+  {id:'kanye',name:'侃爷语录',desc:'随机 Kanye West 语录',src:'kanye.rest',cat:'文字'},
+  {id:'advice',name:'人生建议',desc:'随机人生建议',src:'adviceslip.com',cat:'文字'},
+  {id:'gender',name:'名字性别',desc:'预测名字性别',src:'genderize.io',cat:'数据'},
+  {id:'age',name:'名字年龄',desc:'预测名字年龄段',src:'agify.io',cat:'数据'},
+  {id:'ip',name:'我的 IP',desc:'定位当前出口 IP',src:'ipwho.is',cat:'数据'},
+  {id:'user',name:'随机用户',desc:'生成虚构人物资料',src:'randomuser.me',cat:'数据'},
+  {id:'fx',name:'实时汇率',desc:'美元兑主要货币',src:'er-api.com',cat:'数据'},
+  {id:'pokemon',name:'宝可梦',desc:'皮卡丘资料',src:'pokeapi.co',cat:'数据'},
+  {id:'sw',name:'星战人物',desc:'星战角色卢克',src:'swapi.dev',cat:'数据'},
+  {id:'country',name:'世界国家',desc:'国家首都与人口',src:'restcountries.com',cat:'数据'},
+  {id:'chuck',name:'Chuck 语录',desc:'随机硬汉语录',src:'chucknorris.io',cat:'文字'},
+  {id:'dadjoke',name:'老爸笑话',desc:'随机冷笑话',src:'icanhazdadjoke.com',cat:'文字'},
+  {id:'cocktail',name:'随机鸡尾酒',desc:'随机鸡尾酒配方',src:'cocktaildb.com',cat:'工具'},
+  {id:'meal',name:'随机美食',desc:'随机菜谱',src:'themealdb.com',cat:'工具'},
+  {id:'sunrise',name:'日出日落',desc:'北京日出日落时间',src:'sunrise-sunset.org',cat:'数据'},
+  {id:'zip',name:'邮编查询',desc:'美国邮编信息',src:'zippopotam.us',cat:'工具'},
+  {id:'zen',name:'GitHub 禅语',desc:'开发哲学短句',src:'github.com',cat:'文字'},
+  {id:'picsum',name:'随机图片',desc:'Lorem Picsum 随机图片',src:'picsum.photos',cat:'图片'},
+  {id:'duck',name:'随机鸭子',desc:'随机鸭子照片',src:'random-d.uk',cat:'图片'},
+  {id:'iss',name:'空间站位置',desc:'国际空间站实时经纬度',src:'open-notify.org',cat:'太空'},
+  {id:'astro',name:'太空宇航员',desc:'当前在轨宇航员名单',src:'open-notify.org',cat:'太空'},
+  {id:'qrcode',name:'二维码生成',desc:'生成任意内容的二维码',src:'qrserver.com',cat:'工具'},
+  {id:'avatar',name:'头像生成',desc:'DiceBear 随机头像',src:'dicebear.com',cat:'图片'},
+  {id:'quote',name:'随机名言',desc:'DummyJSON 英文名言',src:'dummyjson.com',cat:'文字'},
+  {id:'chess',name:'棋手资料',desc:'国际象棋棋手 Hikaru 资料',src:'chess.com',cat:'数据'}
 ];
 
 const grid=document.getElementById('grid');
@@ -179,10 +200,15 @@ const sApi=document.getElementById('s-api');
 sApi.textContent=APIS.length;
 document.getElementById('meta-count').textContent=APIS.length+' 接口 · 无密钥 · 直调';
 
-function render(filter){
+let curCat='', curKw='';
+
+function render(){
   grid.innerHTML='';
-  const kw=(filter||'').trim().toLowerCase();
-  const list=APIS.filter(a=>!kw||a.name.toLowerCase().includes(kw)||a.desc.toLowerCase().includes(kw)||a.src.toLowerCase().includes(kw));
+  const kw=curKw.trim().toLowerCase();
+  const list=APIS.filter(a=>
+    (!curCat||a.cat===curCat) &&
+    (!kw||a.name.toLowerCase().includes(kw)||a.desc.toLowerCase().includes(kw)||a.src.toLowerCase().includes(kw))
+  );
   list.forEach((a,i)=>{
     const c=document.createElement('a');
     c.className='card';
@@ -190,7 +216,7 @@ function render(filter){
     c.innerHTML=`
       <div class="topline">
         <span class="idx">${String(i+1).padStart(2,'0')}</span>
-        <span class="st">FREE</span>
+        <span class="st">${a.cat}</span>
       </div>
       <h3>${a.name}</h3>
       <p>${a.desc}</p>
@@ -204,7 +230,23 @@ function render(filter){
 }
 
 render();
-document.getElementById('search').addEventListener('input',e=>render(e.target.value));
+document.getElementById('search').addEventListener('input',e=>{curKw=e.target.value;render()});
+
+// 分类过滤
+document.querySelectorAll('.cat').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.cat').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    curCat=b.dataset.cat;
+    render();
+  });
+});
+
+// 随便看看：随机挑一个接口跳转
+document.getElementById('shuffle').addEventListener('click',()=>{
+  const pick=APIS[Math.floor(Math.random()*APIS.length)];
+  location.href='detail.html?id='+pick.id;
+});
 </script>
 </body>
 </html>
