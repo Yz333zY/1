@@ -142,7 +142,21 @@ const APIS={
   zen:{name:'GitHub 禅语',desc:'开发哲学短句 · GitHub Zen',url:()=>'https://api.github.com/zen',
     parse:async d=>({禅语:typeof d==='string'?d:JSON.stringify(d)})},
   picsum:{name:'随机图片',desc:'Lorem Picsum 随机图片',url:()=>'https://picsum.photos/800/500',
-    parse:async d=>({img:'https://picsum.photos/800/500'}),image:true}
+    parse:async d=>({img:'https://picsum.photos/800/500'}),image:true},
+  duck:{name:'随机鸭子',desc:'随机鸭子照片 · random-d.uk',url:()=>'https://random-d.uk/api/random',
+    parse:async d=>{const r=await fetch(d.url);const b=await r.blob();const u=URL.createObjectURL(b);return {img:u,src:d.url}},image:true},
+  iss:{name:'空间站位置',desc:'国际空间站实时经纬度 · Open-Notify',url:()=>'https://api.open-notify.org/iss-now.json',
+    parse:async d=>({纬度:d.iss_position?.latitude,经度:d.iss_position?.longitude,时间:new Date(d.timestamp*1000).toLocaleString()})},
+  astro:{name:'太空宇航员',desc:'当前在轨宇航员名单 · Open-Notify',url:()=>'https://api.open-notify.org/astros.json',
+    parse:async d=>({在轨人数:d.number,名单:d.people?.map(p=>p.name).join(', ')})},
+  qrcode:{name:'二维码生成',desc:'生成任意内容的二维码 · QRServer',url:()=>'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://yz333zy.github.io/1/',
+    parse:async d=>({img:'https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=https://yz333zy.github.io/1/'}),image:true},
+  avatar:{name:'头像生成',desc:'DiceBear 随机头像 · bottts',url:()=>'https://api.dicebear.com/7.x/bottts/svg?seed='+Math.random(),
+    parse:async d=>({img:'https://api.dicebear.com/7.x/bottts/svg?seed='+Math.random()}),image:true},
+  quote:{name:'随机名言',desc:'DummyJSON 英文名言',url:()=>'https://dummyjson.com/quotes/random',
+    parse:async d=>({名言:d.quote,作者:d.author})},
+  chess:{name:'棋手资料',desc:'国际象棋棋手 Hikaru 资料 · Chess.com',url:()=>'https://api.chess.com/pub/player/hikaru',
+    parse:async d=>({用户名:d.username,昵称:d.name,国家:d.country,位置:d.location,加入时间:new Date(d.joined*1000).toLocaleDateString()})}
 };
 
 const api=APIS[id]||APIS.weather;
