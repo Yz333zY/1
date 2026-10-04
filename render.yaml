@@ -1,0 +1,10 @@
+# API Linker · Render 静态站点部署配置
+# 用法：
+#   1. 把整个 api-linker 文件夹推送到 GitHub 仓库
+#   2. Render 新建 Web Service → 连接仓库
+#   3. 构建命令留空 / 环境选 Static Site，Publish directory 填：.
+#   4. 免费实例会自动分配 https://xxx.onrender.com
+
+# 渲染引擎：直接用静态文件（纯 HTML/CSS/JS，无需构建）
+buildCommand: ""
+publishDir: "."
