@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>接口簿 · 详情</title>
+<style>
+:root{
+  --bg:#e8ecf2; --glass:rgba(255,255,255,.5); --line:rgba(255,255,255,.75);
+  --ink:#1b2230; --ink2:#5a6472; --ink3:#8a94a2;
+  --shadow:0 10px 40px -10px rgba(40,60,90,.25); --radius:24px;
+  --ok:#3d8b5f; --err:#c24040;
+  --sans:-apple-system,"SF Pro Text","PingFang SC",system-ui,sans-serif;
+  --mono:"SF Mono",ui-monospace,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);min-height:100vh;line-height:1.6;
+  background-image:
+    radial-gradient(600px 400px at 85% -5%,rgba(120,180,255,.35),transparent 65%),
+    radial-gradient(500px 350px at -10% 30%,rgba(255,170,220,.28),transparent 60%),
+    radial-gradient(700px 500px at 50% 115%,rgba(140,220,255,.3),transparent 65%);
+  background-attachment:fixed}
+.wrap{max-width:640px;margin:0 auto;padding:48px 20px 80px;position:relative;z-index:1}
+
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:44px}
+.back{text-decoration:none;color:var(--ink);font-size:13px;background:var(--glass);
+  border:1px solid var(--line);padding:9px 18px;border-radius:99px;backdrop-filter:blur(20px);
+  -webkit-backdrop-filter:blur(20px);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.7);transition:.15s}
+.back:hover{box-shadow:0 14px 40px -10px rgba(40,60,90,.35)}
+.idx{font-family:var(--mono);font-size:12px;color:var(--ink3)}
+
+h1{font-size:26px;font-weight:700;letter-spacing:-.01em;margin-bottom:6px}
+.desc{color:var(--ink2);font-size:13.5px;margin-bottom:28px}
+
+.status{display:flex;align-items:center;gap:10px;font-family:var(--mono);font-size:12.5px;color:var(--ink2);margin-bottom:20px;min-height:24px}
+.status .dot{width:8px;height:8px;border-radius:50%;background:var(--ink3)}
+.status .dot.ok{background:var(--ok);box-shadow:0 0 10px rgba(61,139,95,.5)}
+.status .dot.err{background:var(--err);box-shadow:0 0 10px rgba(194,64,64,.5)}
+.status .dot.busy{background:#c7952e;animation:blink 1s infinite}
+@keyframes blink{50%{opacity:.35}}
+
+.panel{background:var(--glass);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+  backdrop-filter:blur(24px) saturate(1.6);-webkit-backdrop-filter:blur(24px) saturate(1.6);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.7);position:relative}
+.panel::before{content:'';position:absolute;top:0;left:15%;right:15%;height:1.5px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,.95),transparent)}
+.panel .ph{display:flex;justify-content:space-between;padding:14px 20px;border-bottom:1px solid rgba(90,100,114,.14);
+  font-size:12px;color:var(--ink3);font-family:var(--mono)}
+.panel .pb{padding:22px 20px;min-height:120px}
+.kv-item{display:flex;justify-content:space-between;gap:20px;padding:11px 0;border-bottom:1px solid rgba(90,100,114,.12);font-size:13.5px}
+.kv-item:last-child{border-bottom:none}
+.kv-item .k{color:var(--ink2);flex-shrink:0}
+.kv-item .v{text-align:right;word-break:break-all;font-weight:500}
+.img-box{text-align:center;padding:8px 0}
+.img-box img{max-width:100%;max-height:380px;border-radius:16px}
+pre{font-family:var(--mono);font-size:12px;line-height:1.7;white-space:pre-wrap;word-break:break-all;color:var(--ink2);max-height:340px;overflow:auto}
+.err{color:var(--err);font-family:var(--mono);font-size:13px;padding:14px;border:1px solid rgba(194,64,64,.3);border-radius:12px;background:rgba(194,64,64,.05)}
+
+.actions{display:flex;gap:10px;margin-top:18px}
+.btn{flex:1;border:1px solid var(--line);background:var(--glass);color:var(--ink);padding:13px;border-radius:14px;
+  font-size:13px;cursor:pointer;transition:.15s;backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);
+  box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.6);font-family:var(--sans)}
+.btn:hover{box-shadow:0 14px 40px -10px rgba(40,60,90,.35)}
+
+@media(max-width:600px){.wrap{padding:28px 14px 60px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <a class="back" href="index.html">← 返回</a>
+    <span class="idx" id="idx"></span>
+  </div>
+
+  <h1 id="title"></h1>
+  <div class="desc" id="desc"></div>
+
+  <div class="status"><span class="dot" id="dot"></span><span id="st"></span></div>
+
+  <div class="panel">
+    <div class="ph"><span>响应</span><span id="meta"></span></div>
+    <div class="pb" id="body"><pre>请求中…</pre></div>
+  </div>
+
+  <div class="actions">
+    <button class="btn" id="reload">重新请求</button>
+    <button class="btn" id="copy">复制 JSON</button>
+  </div>
+</div>
+
+<script>
+const params=new URLSearchParams(location.search);
+const id=params.get('id')||'weather';
+
+const APIS={
+  translate:{name:'中文翻译',desc:'英→中翻译 · MyMemory',url:()=>'https://api.mymemory.translated.net/get?q=hello%20world&langpair=en|zh-CN',
+    parse:async d=>({原文:'hello world',译文:d.responseData?.translatedText,匹配度:d.responseData?.match})},
+  weather:{name:'实时天气',desc:'北京当前天气 · Open-Meteo',url:()=>'https://api.open-meteo.com/v1/forecast?latitude=39.9&longitude=116.4&current_weather=true',
+    parse:async d=>{const c=d.current_weather;return {温度:`${c.temperature}°C`,风速:`${c.windspeed} km/h`,风向:`${c.winddirection}°`,时间:c.time}}},
+  hitokoto:{name:'一言',desc:'随机中文句子 · Hitokoto',url:()=>'https://v1.hitokoto.cn/?encode=json',
+    parse:async d=>({句子:d.hitokoto,出处:d.from,类型:d.type})},
+  cat:{name:'猫咪冷知识',desc:'随机猫咪知识 · CatFact',url:()=>'https://catfact.ninja/fact',
+    parse:async d=>({fact:d.fact})},
+  dog:{name:'随机狗图',desc:'随机狗狗照片 · Dog CEO',url:()=>'https://dog.ceo/api/breeds/image/random',
+    parse:async d=>{const r=await fetch(d.message);const b=await r.blob();const u=URL.createObjectURL(b);return {img:u,src:d.message}},image:true},
+  fox:{name:'随机狐狸',desc:'随机狐狸照片 · RandomFox',url:()=>'https://randomfox.ca/floof/',
+    parse:async d=>{const r=await fetch(d.image);const b=await r.blob();const u=URL.createObjectURL(b);return {img:u,src:d.image}},image:true},
+  joke:{name:'随机笑话',desc:'安全模式笑话 · JokeAPI',url:()=>'https://v2.jokeapi.dev/joke/Any?safe-mode',
+    parse:async d=>d.type==='single'?{joke:d.joke}:{setup:d.setup,delivery:d.delivery}},
+  kanye:{name:'侃爷语录',desc:'随机 Kanye West 语录',url:()=>'https://api.kanye.rest/',
+    parse:async d=>({quote:d.quote})},
+  advice:{name:'人生建议',desc:'随机人生建议 · Advice Slip',url:()=>'https://api.adviceslip.com/advice',
+    parse:async d=>({advice:d.slip.advice})},
+  gender:{name:'名字性别',desc:'预测名字性别 · Genderize',url:()=>'https://api.genderize.io/?name=alex',
+    parse:async d=>({名字:d.name,性别:d.gender,概率:d.probability,样本:d.count})},
+  age:{name:'名字年龄',desc:'预测名字年龄段 · Agify',url:()=>'https://api.agify.io/?name=alex',
+    parse:async d=>({名字:d.name,年龄:d.age,样本:d.count})},
+  ip:{name:'我的 IP',desc:'定位当前出口 IP · IPWhois',url:()=>'https://ipwho.is/',
+    parse:async d=>({IP:d.ip,国家:d.country,城市:d.city,时区:d.timezone?.id,ISP:d.connection?.isp})},
+  user:{name:'随机用户',desc:'生成虚构人物资料 · RandomUser',url:()=>'https://randomuser.me/api/',
+    parse:async d=>{const u=d.results[0];return {姓名:`${u.name.first} ${u.name.last}`,性别:u.gender,国籍:u.nat,邮箱:u.email,城市:u.location.city}}},
+  fx:{name:'实时汇率',desc:'美元兑主要货币 · ExchangeRate',url:()=>'https://open.er-api.com/v6/latest/USD',
+    parse:async d=>{const r=d.rates||{};return {基准:d.base_code||'USD',CNY:r.CNY,EUR:r.EUR,JPY:r.JPY,GBP:r.GBP,KRW:r.KRW}}},
+  pokemon:{name:'宝可梦',desc:'皮卡丘资料 · PokeAPI',url:()=>'https://pokeapi.co/api/v2/pokemon/pikachu',
+    parse:async d=>({名字:d.name,身高:d.height,体重:d.weight,类型:d.types.map(t=>t.type.name).join(','),能力:d.abilities.map(a=>a.ability.name).join(',')})},
+  sw:{name:'星战人物',desc:'星战角色卢克 · SWAPI',url:()=>'https://swapi.dev/api/people/1/',
+    parse:async d=>({名字:d.name,身高:d.height,体重:d.mass,发色:d.hair_color,出生年:d.birth_year})},
+  country:{name:'世界国家',desc:'国家首都与人口 · RestCountries',url:()=>'https://restcountries.com/v3.1/all?fields=name,capital,population,flags,cca3',
+    parse:async d=>{const pick=d[Math.floor(Math.random()*d.length)];return {国家:pick.name.common,代码:pick.cca3,首都:(pick.capital||['—'])[0],人口:(pick.population||0).toLocaleString()}}},
+  chuck:{name:'Chuck 语录',desc:'随机硬汉语录 · Chuck Norris',url:()=>'https://api.chucknorris.io/jokes/random',
+    parse:async d=>({语录:d.value})},
+  dadjoke:{name:'老爸笑话',desc:'随机冷笑话 · icanhazdadjoke',url:()=>'https://icanhazdadjoke.com/',
+    parse:async d=>({joke:d.joke})},
+  cocktail:{name:'随机鸡尾酒',desc:'随机鸡尾酒配方 · CocktailDB',url:()=>'https://www.thecocktaildb.com/api/json/v1/1/random.php',
+    parse:async d=>{const c=d.drinks?d.drinks[0]:{};const ing=[];for(let i=1;i<=15;i++){if(c['strIngredient'+i])ing.push(c['strIngredient'+i]+(c['strMeasure'+i]?' · '+c['strMeasure'+i]:''))}return {名称:c.strDrink||'—',类别:c.strCategory||'—',酒杯:c.strGlass||'—',配料:ing.join(', ')||'—',做法:c.strInstructions||'—'}}},
+  meal:{name:'随机美食',desc:'随机菜谱 · MealDB',url:()=>'https://www.themealdb.com/api/json/v1/1/random.php',
+    parse:async d=>{const m=d.meals?d.meals[0]:{};return {菜名:m.strMeal||'—',地区:m.strArea||'—',类别:m.strCategory||'—',做法:(m.strInstructions||'—').slice(0,300)}}},
+  sunrise:{name:'日出日落',desc:'北京日出日落时间 · Sunrise-Sunset',url:()=>'https://api.sunrise-sunset.org/json?lat=39.9&lng=116.4',
+    parse:async d=>({日出:d.results?.sunrise,日落:d.results?.sunset,日照时长:d.results?.day_length})},
+  zip:{name:'邮编查询',desc:'美国邮编信息 · Zippopotam',url:()=>'https://api.zippopotam.us/us/90210',
+    parse:async d=>({邮编:d['post code'],国家:d.country,州:d.places?.[0]?.state,城市:d.places?.[0]?.['place name']})},
+  zen:{name:'GitHub 禅语',desc:'开发哲学短句 · GitHub Zen',url:()=>'https://api.github.com/zen',
+    parse:async d=>({禅语:typeof d==='string'?d:JSON.stringify(d)})},
+  picsum:{name:'随机图片',desc:'Lorem Picsum 随机图片',url:()=>'https://picsum.photos/800/500',
+    parse:async d=>({img:'https://picsum.photos/800/500'}),image:true}
+};
+
+const api=APIS[id]||APIS.weather;
+const ids=Object.keys(APIS);
+document.getElementById('title').textContent=api.name;
+document.getElementById('desc').textContent=api.desc;
+document.getElementById('idx').textContent=String(ids.indexOf(id)+1).padStart(2,'0')+' / '+ids.length;
+document.title=api.name+' · 接口簿';
+
+const dot=document.getElementById('dot'),st=document.getElementById('st'),
+      meta=document.getElementById('meta'),body=document.getElementById('body');
+let rawData=null;
+
+async function load(){
+  dot.className='dot busy';st.textContent='请求中…';meta.textContent='';body.innerHTML='<pre>请求中…</pre>';
+  const t0=performance.now();
+  let lastErr=null;
+  // 重试 3 次（应对网络抖动）
+  for(let attempt=0;attempt<3;attempt++){
+    try{
+      const res=await fetch(api.url());
+      if(!res.ok) throw new Error('HTTP '+res.status);
+      const data=await res.json();
+      rawData=data;
+      const parsed=await api.parse(data);
+      const lat=Math.round(performance.now()-t0);
+
+      dot.className='dot ok';st.textContent='成功 · '+lat+'ms'+(attempt?'（重试'+(attempt)+'次）':'');
+      meta.textContent=res.status+' · '+lat+'ms';
+
+      if(api.image&&parsed.img){
+        body.innerHTML=`<div class="img-box"><img src="${parsed.img}" alt=""></div><pre>${JSON.stringify(parsed,null,2)}</pre>`;
+      }else{
+        let h='';
+        Object.entries(parsed).forEach(([k,v])=>{h+=`<div class="kv-item"><span class="k">${k}</span><span class="v">${v}</span></div>`});
+        body.innerHTML=h||'<pre>（空响应）</pre>';
+      }
+      return;
+    }catch(e){
+      lastErr=e;
+      await new Promise(r=>setTimeout(r,700*(attempt+1)));
+    }
+  }
+  dot.className='dot err';st.textContent='失败';meta.textContent='ERROR';
+  body.innerHTML=`<div class="err">请求失败：${lastErr?.message||lastErr}</div>`;
+}
+load();
+document.getElementById('reload').onclick=load;
+document.getElementById('copy').onclick=async()=>{
+  if(!rawData)return;
+  try{await navigator.clipboard.writeText(JSON.stringify(rawData,null,2));document.getElementById('copy').textContent='已复制';
+    setTimeout(()=>document.getElementById('copy').textContent='复制 JSON',1600);
+  }catch(e){alert('复制失败，请手动复制')}
+};
+</script>
+</body>
+</html>
